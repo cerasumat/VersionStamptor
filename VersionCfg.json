@@ -1,0 +1,12 @@
+{
+    "root": "website",
+    "edition": "v1",
+    "prefix": "http://static.chanjet.com",
+    "suffix": "js;css;png;jpg",
+    "srcpath": "E:\\Github_src\\Python3src\\WebSite",
+    "dstpath": "",
+    "stamptype": "hash",
+    "forced": "true",
+    "detailed": "true",
+    "logged": "true"
+}
