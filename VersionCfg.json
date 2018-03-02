@@ -5,7 +5,7 @@
     "suffix": "js;css;png;jpg",
     "srcpath": "E:\\Github_src\\Python3src\\WebSite",
     "dstpath": "",
-    "stamptype": "hash",
+    "stamptype": "none",
     "forced": "true",
     "detailed": "true",
     "logged": "true"

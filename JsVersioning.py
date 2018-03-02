@@ -1,4 +1,4 @@
-# encoding: utf-8
+# encoding: utf-8-sig
 '''
 author: JiaKai
 This is a script to replace the JS-File version of the target HTML-Files
@@ -8,7 +8,7 @@ parameters: -r(--root): static files root
             -suf(--suffix): suffixes to be versioned
             -src(--srcpath): static files folder path
             -dst(--dstpath): replace files folder path
-            -t(--stamptype): stamp type: time or hash
+            -t(--stamptype): stamp type: time or hash or none(not to stamp)
             -f(--forced): versioned include no '?t=xxx' flag
             -d(--detail): show the versiong process
             -src(--log): True-replace logged
@@ -126,7 +126,9 @@ class FileMapper(object):
                         if not os.path.exists(relative_dir):
                             shutil.copy2(sub_dir, latest_dir)
                         if not self.files.__contains__(relative_key):
-                            if self.stamp_type == 'hash':
+                            if self.stamp_type.lower() == 'none':
+                                fstamp = ''
+                            elif self.stamp_type == 'hash':
                                 fstamp = self.get_file_md5(relative_dir)
                             else:
                                 fstamp, _ = self.get_file_modifytime(relative_dir)
@@ -343,8 +345,13 @@ class FileStamptor2(object):
                         if fm:
                             # file_paths = re.split('[\\/]+', fm.group(1))
                             # file_name = file_paths[len(file_paths) - 1]
-                            file_name = os.path.abspath(
-                                os.path.join(html_path, fm.group(1))).lower()
+                            if fm.group(1).startswith(self.static_path):
+                                edition_index = fm.group(1).find(self.edition)
+                                paths = fm.group(1)[edition_index+len(self.edition)+1:].split('/')
+                                file_name = self.root + '\\' + '\\'.join(paths)
+                            else:
+                                file_name = os.path.abspath(
+                                    os.path.join(html_path, fm.group(1))).lower()
                             root_index = file_name.find(self.root)
                             if root_index > -1:
                                 file_name = file_name[root_index:root_index+root_len] + '\\' + self.edition + file_name[root_index+root_len:]
@@ -367,11 +374,9 @@ class FileStamptor2(object):
                                         + '?t=' + file_stamp \
                                         + line[f_index+len(fm.group(1)):]
                                     # new_line = line[:f_index] + '?t=' + file_stamp + line[f_index:]
-
                                     if self.static_path and not fm.group(1).startswith(self.static_path):
                                         sp = self.get_static_file_path(self.static_path, self.root, file_name)
                                         new_line = new_line.replace(fm.group(1), sp)
-
                                     new_lines.append(new_line)
                                     is_modified = True
                                     if not self.replace_logs.__contains__(
@@ -380,7 +385,17 @@ class FileStamptor2(object):
                                     self.replace_logs[source_file].append(
                                         'Line: %d' % line_count)
                                 else:
-                                    new_lines.append(line)
+                                    new_line = line
+                                    if self.static_path and not fm.group(1).startswith(self.static_path):
+                                        sp = self.get_static_file_path(self.static_path, self.root, file_name)
+                                        new_line = new_line.replace(fm.group(1), sp)
+                                    new_lines.append(new_line)
+                                    is_modified = True
+                                    if not self.replace_logs.__contains__(
+                                            source_file):
+                                        self.replace_logs[source_file] = []
+                                    self.replace_logs[source_file].append(
+                                        'Line: %d' % line_count)
                             else:
                                 new_lines.append(line)
                         else:
@@ -393,20 +408,20 @@ class FileStamptor2(object):
             self.error_logs.append("{0} replace failed!\nException:{1}".format(
                 source_file, str(exp)))
         if is_modified:
-            with open(source_file, 'w', encoding='utf-8') as f:
+            with open(source_file, 'w', encoding='utf-8-sig') as f:
                 for line in new_lines:
                     f.write(line)
 
     def write_replace_logs(self):
         path = os.getcwd() + '\\replace_log_' + datetime.datetime.now(
         ).strftime('%Y%m%d%H%M%S') + ".log"
-        with open(path, 'w', encoding='utf-8') as f:
+        with open(path, 'w', encoding='utf-8-sig') as f:
             for k in self.replace_logs:
                 f.write('%s:%s\n\n' % (k, self.replace_logs[k]))
         if len(self.error_logs) > 0:
             path = os.getcwd() + '\\replace_error_log_' + datetime.datetime.now(
             ).strftime('%Y%m%d%H%M%S') + ".log"
-            with open(path, 'w', encoding='utf-8') as f:
+            with open(path, 'w', encoding='utf-8-sig') as f:
                 for k in self.error_logs:
                     f.write('%s\n' % (k))
 
@@ -487,20 +502,20 @@ class FileStamptor():
         except Exception:
             self.error_logs.append("{0} replace failed!\n".format(source_file))
         if is_modified:
-            with open(source_file, 'w', encoding='utf-8') as f:
+            with open(source_file, 'w', encoding='utf-8-sig') as f:
                 for line in new_lines:
                     f.write(line)
 
     def write_replace_logs(self):
         path = os.getcwd() + '\\replace_log_' + datetime.datetime.now(
         ).strftime('%Y%m%d%H%M%S') + ".log"
-        with open(path, 'w', encoding='utf-8') as f:
+        with open(path, 'w', encoding='utf-8-sig') as f:
             for k in self.replace_logs:
                 f.write('%s:%s\n\n' % (k, self.replace_logs[k]))
         if len(self.error_logs) > 0:
             path = os.getcwd() + '\\replace_error_log_' + datetime.datetime.now(
             ).strftime('%Y%m%d%H%M%S') + ".log"
-            with open(path, 'w', encoding='utf-8') as f:
+            with open(path, 'w', encoding='utf-8-sig') as f:
                 for k in self.error_logs:
                     f.write('%s\n' % (k))
 
