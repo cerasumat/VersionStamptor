@@ -62,6 +62,7 @@ class Configuration(object):
                 self.is_forced = self.str2bool(cfg['forced'])
                 self.is_detailed = self.str2bool(cfg['detailed'])
                 self.is_logged = self.str2bool(cfg['logged'])
+                self.white_list = cfg['whitelist']
         except IOError:
             pass
 
@@ -173,11 +174,14 @@ class JsInfo():
 
 
 class FileInfo(object):
-    def __init__(self):
+    def __init__(self, whitelist):
         self.html_files = dict()
         self.aspx_files = dict()
+        self.white_list = whitelist
 
     def get_replace_file_paths(self, find_path):
+        if find_path.lower() in self.white_list:
+            return
         dirs = os.listdir(find_path)
         for i in dirs:
             sub_dir = os.path.join(find_path, i)
@@ -224,6 +228,8 @@ class FileStamptor2(object):
         else:
             self.reg_html_link = '.*src=["\'](.+\.' + suffix + ')\?t=(\w+)["\']'
             self.reg_html_link_f = '.*src=["\'](.+\.' + suffix + ')["\']'
+        self.reg_chaset = '.*meta\s+charset.*'
+        self.reg_head = '.*<head.*'
 
     def load_stamps(self):
         try:
@@ -277,7 +283,7 @@ class FileStamptor2(object):
         if abs_paths[0] == root:
             abs_paths = abs_paths[1:]
         abs_path = '/'.join(abs_paths)
-        return static_path.rstrip('\\/') + '/' + abs_path
+        return str(static_path.rstrip('\\/') + '/' + abs_path).lower()
 
     def stamp_html_file(self, source_file):
         new_lines = []
@@ -291,8 +297,16 @@ class FileStamptor2(object):
                 code_data = chardet.detect(buf)
             with open(source_file, 'r', encoding=code_data['encoding']) as f:
                 line_count = 0
+                head_index = -1
+                chaset_index = -1
                 for line in f:
                     line_count += 1
+                    # 2018-03-07 - Add Charset------------------------------
+                    if re.match(self.reg_head, line, re.M | re.I):
+                        head_index = line_count
+                    if re.match(self.reg_chaset, line, re.M | re.I):
+                        chaset_index = line_count
+                    # --------------------------------------------------------
                     # line = line.replace(self.static_path, '')
                     m = re.match(self.reg_html_link, line, re.M | re.I)
                     if m:
@@ -348,7 +362,7 @@ class FileStamptor2(object):
                             if fm.group(1).startswith(self.static_path):
                                 edition_index = fm.group(1).find(self.edition)
                                 paths = fm.group(1)[edition_index+len(self.edition)+1:].split('/')
-                                file_name = self.root + '\\' + '\\'.join(paths)
+                                file_name = (self.root + '\\' + '\\'.join(paths)).lower()
                             else:
                                 file_name = os.path.abspath(
                                     os.path.join(html_path, fm.group(1))).lower()
@@ -402,6 +416,10 @@ class FileStamptor2(object):
                             new_lines.append(line)
                     else:
                         new_lines.append(line)
+                # 2018-03-07 - Add Charset-----------------------------------
+                if chaset_index == -1 and head_index > -1:
+                    new_lines.insert(head_index, '      <meta charset="utf-8">\n') 
+                # ------------------------------------------------------------
         # except UnicodeDecodeError:
         # except (TypeError, UnicodeDecodeError, IOError):
         except Exception as exp:
@@ -567,7 +585,7 @@ if __name__ == '__main__':
         file_mapper.get_file_stamps(config.src_path, suf)
     file_mapper.write_stamps()
     # Get the html&aspx files that need to be stamped
-    file_info = FileInfo()
+    file_info = FileInfo(config.white_list)
     file_info.get_replace_file_paths(config.src_path)
     html_files = file_info.html_files
     aspx_files = file_info.aspx_files

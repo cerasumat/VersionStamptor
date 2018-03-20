@@ -4,6 +4,7 @@
     "prefix": "http://static.chanjet.com",
     "suffix": "js;css;png;jpg",
     "srcpath": "E:\\Github_src\\Python3src\\WebSite",
+    "whitelist": ["e:\\github_src\\python3src\\website\\ufaqd\\handbook"],
     "dstpath": "",
     "stamptype": "none",
     "forced": "true",
